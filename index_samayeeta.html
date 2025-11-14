@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Credit Card Fraud Detection - Feature Engineering</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        nav {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        nav ul {
+            list-style: none;
+            display: flex;
+            justify-content: center;
+            gap: 3rem;
+        }
+
+        nav a {
+            text-decoration: none;
+            color: #667eea;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: color 0.3s;
+            cursor: pointer;
+        }
+
+        nav a:hover {
+            color: #764ba2;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 2rem 2rem 2rem;
+        }
+
+        .page {
+            display: none;
+            background: white;
+            border-radius: 15px;
+            padding: 3rem;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            animation: fadeIn 0.5s;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h1 {
+            color: #667eea;
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+
+        h2 {
+            color: #764ba2;
+            font-size: 2rem;
+            margin: 2rem 0 1rem 0;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 0.5rem;
+        }
+
+        h3 {
+            color: #667eea;
+            font-size: 1.5rem;
+            margin: 1.5rem 0 1rem 0;
+        }
+
+        h4 {
+            color: #667eea;
+            font-size: 1.2rem;
+            margin: 1rem 0 0.5rem 0;
+        }
+
+        p {
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+
+        .hero {
+            text-align: center;
+            padding: 2rem 0;
+        }
+
+        .hero-icon {
+            font-size: 5rem;
+            margin-bottom: 1rem;
+        }
+
+        .github-link {
+            text-align: center;
+            margin: 2rem 0;
+        }
+
+        .github-link a {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 30px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: transform 0.3s;
+        }
+
+        .github-link a:hover {
+            transform: translateY(-3px);
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .feature-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            border-radius: 10px;
+            text-align: center;
+            transition: transform 0.3s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .info-section {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin: 1.5rem 0;
+            border-left: 5px solid #667eea;
+        }
+
+        ul {
+            margin-left: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        li {
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+        }
+
+        .tech-stack {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+
+        .tech-badge {
+            background: #667eea;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+
+        .note {
+            background: #fff3cd;
+            border-left: 5px solid #ffc107;
+            padding: 1rem;
+            margin: 1.5rem 0;
+            border-radius: 5px;
+        }
+
+        .note strong {
+            color: #856404;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        @media (max-width: 768px) {
+            nav ul {
+                gap: 1.5rem;
+            }
+            
+            .container {
+                padding: 0 1rem 1rem 1rem;
+            }
+            
+            .page {
+                padding: 1.5rem;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <ul>
+            <li><a onclick="showPage('home')">Home</a></li>
+            <li><a onclick="showPage('model')">Model Info</a></li>
+            <li><a onclick="showPage('analysis')">Analysis</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+        <!-- Home Page -->
+        <div id="home" class="page active">
+            <div class="hero">
+                <div class="hero-icon">🔒</div>
+                <h1>Credit Card Fraud Detection</h1>
+                <p style="text-align: center; font-size: 1.2rem; color: #6c757d;">
+                    Feature Engineering for Credit Card Fraud Detection<br>
+                    Machine Learning Project using Python & Google Colaboratory
+                </p>
+            </div>
+
+            <div class="github-link">
+                <a href="https://github.com/SAMAYEETA27/Feature-Engineering-for-Credit-Card-Fraud-Detection-by-Samayeeta-Saha" target="_blank">
+                    📂 View Project on GitHub
+                </a>
+            </div>
+
+            <div class="features">
+                <div class="feature-card">
+                    <div class="feature-icon">⚙️</div>
+                    <h3>Feature Engineering</h3>
+                    <p>Advanced feature extraction and transformation techniques for improved fraud detection</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🤖</div>
+                    <h3>ML-Powered</h3>
+                    <p>Multiple machine learning algorithms to detect fraudulent transactions</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📊</div>
+                    <h3>Data Analysis</h3>
+                    <p>Comprehensive exploratory data analysis and visualization</p>
+                </div>
+            </div>
+
+            <div class="info-section">
+                <h2>Project Overview</h2>
+                <p>
+                    This project implements a comprehensive machine learning solution for detecting fraudulent credit card 
+                    transactions with a strong emphasis on feature engineering. Using Python in Google Colaboratory, the 
+                    system analyzes transaction data and creates meaningful features to improve fraud detection accuracy.
+                </p>
+                <p>
+                    Feature engineering plays a crucial role in capturing customer spending patterns, temporal behaviors, 
+                    and transaction characteristics that help distinguish between legitimate and fraudulent activities.
+                </p>
+            </div>
+
+            <div class="info-section">
+                <h3>Project Highlights</h3>
+                <ul>
+                    <li>Extensive exploratory data analysis and visualization</li>
+                    <li>Strategic feature engineering for pattern recognition</li>
+                    <li>Handling of highly imbalanced datasets</li>
+                    <li>Implementation of multiple ML algorithms</li>
+                    <li>Comprehensive model evaluation metrics</li>
+                    <li>Transaction time and amount pattern analysis</li>
+                </ul>
+            </div>
+
+            <div class="info-section">
+                <h3>About the Project</h3>
+                <p>
+                    This project was developed by <strong>Samayeeta Saha</strong> as part of a comprehensive study in 
+                    credit card fraud detection. The focus is on creating meaningful variables through feature engineering 
+                    to enhance model accuracy in identifying suspicious behavior and reducing false positives.
+                </p>
+            </div>
+        </div>
+
+        <!-- Model Info Page -->
+        <div id="model" class="page">
+            <h1>Model Information</h1>
+
+            <div class="info-section">
+                <h2>Technology Stack</h2>
+                <div class="tech-stack">
+                    <span class="tech-badge">Python</span>
+                    <span class="tech-badge">Google Colaboratory</span>
+                    <span class="tech-badge">Scikit-learn</span>
+                    <span class="tech-badge">Pandas</span>
+                    <span class="tech-badge">NumPy</span>
+                    <span class="tech-badge">Matplotlib</span>
+                    <span class="tech-badge">Seaborn</span>
+                </div>
+            </div>
+
+            <div class="info-section">
+                <h2>Dataset Information</h2>
+                <p>
+                    The project uses a credit card transaction dataset containing transactions made by European cardholders 
+                    in September 2013. The dataset is highly imbalanced, with fraudulent transactions representing only 
+                    0.172% of all transactions.
+                </p>
+                <h3>Dataset Characteristics:</h3>
+                <ul>
+                    <li>Contains 93,181 transactions in the analyzed subset</li>
+                    <li>Only 213 frauds (0.23% - highly imbalanced)</li>
+                    <li>28 PCA-transformed features (V1-V28) for confidentiality</li>
+                    <li>Time feature: seconds elapsed between transactions</li>
+                    <li>Amount feature: transaction amount</li>
+                    <li>Class feature: 1 for fraud, 0 for legitimate</li>
+                </ul>
+            </div>
+
+            <div class="info-section">
+                <h2>Feature Engineering Strategy</h2>
+                <p>
+                    Feature engineering is the core focus of this project. New features are created to capture:
+                </p>
+                <ul>
+                    <li><strong>Transaction Time Patterns:</strong> Hour of day, day of week analysis</li>
+                    <li><strong>Amount Patterns:</strong> Statistical aggregations and binning</li>
+                    <li><strong>Customer Behavior:</strong> Spending patterns and anomalies</li>
+                    <li><strong>Temporal Features:</strong> Time-based transaction sequences</li>
+                    <li><strong>Aggregated Features:</strong> Rolling statistics and cumulative metrics</li>
+                    <li><strong>PCA Feature Analysis:</strong> Exploring relationships in V1-V28</li>
+                </ul>
+            </div>
+
+            <div class="info-section">
+                <h2>Machine Learning Algorithms</h2>
+                <p>Multiple algorithms were tested and compared:</p>
+                <ul>
+                    <li><strong>Logistic Regression:</strong> Baseline linear model</li>
+                    <li><strong>Decision Trees:</strong> Non-linear decision boundaries</li>
+                    <li><strong>Random Forest:</strong> Ensemble method with feature importance</li>
+                    <li><strong>Support Vector Machine (SVM):</strong> High-dimensional classification</li>
+                    <li><strong>XGBoost/Gradient Boosting:</strong> Advanced boosting techniques</li>
+                    <li><strong>K-Nearest Neighbors (KNN):</strong> Instance-based learning</li>
+                </ul>
+            </div>
+
+            <div class="info-section">
+                <h2>Data Preprocessing Pipeline</h2>
+                <h3>Steps Performed:</h3>
+                <ul>
+                    <li>Exploratory Data Analysis (EDA)</li>
+                    <li>Missing value detection and handling</li>
+                    <li>Outlier detection and treatment</li>
+                    <li>Feature scaling and normalization (StandardScaler, MinMaxScaler)</li>
+                    <li>Handling class imbalance (SMOTE, Random Undersampling, ADASYN)</li>
+                    <li>Feature selection and dimensionality reduction</li>
+                    <li>Train-test-validation split</li>
+                    <li>Cross-validation for model robustness</li>
+                </ul>
+            </div>
+
+            <div class="info-section">
+                <h2>Model Training & Validation</h2>
+                <p>
+                    The models were trained using stratified sampling to maintain class distribution. Hyperparameter 
+                    tuning was performed using GridSearchCV and RandomizedSearchCV to optimize model performance. 
+                    Special attention was given to precision-recall tradeoff due to the imbalanced nature of the dataset.
+                </p>
+            </div>
+        </div>
+
+        <!-- Analysis Page -->
+        <div id="analysis" class="page">
+            <h1>Analysis & Results</h1>
+
+            <div class="info-section">
+                <h2>Dataset Overview</h2>
+                
+                <h3>Dataset Information</h3>
+                <div style="background: #2d2d2d; color: #f8f9fa; padding: 1.5rem; border-radius: 8px; font-family: 'Courier New', monospace; overflow-x: auto;">
+                    <p style="color: #4CAF50; margin-bottom: 1rem;">Dataset Shape: 93,181 entries (rows), 31 columns</p>
+                    <table style="color: #f8f9fa;">
+                        <tr style="border-bottom: 1px solid #666;">
+                            <th style="text-align: left; padding: 0.5rem;">#</th>
+                            <th style="text-align: left; padding: 0.5rem;">Column</th>
+                            <th style="text-align: left; padding: 0.5rem;">Non-Null Count</th>
+                            <th style="text-align: left; padding: 0.5rem;">Dtype</th>
+                        </tr>
+                        <tr><td style="padding: 0.3rem;">0</td><td style="padding: 0.3rem;">Time</td><td style="padding: 0.3rem;">93,181 non-null</td><td style="padding: 0.3rem;">int64</td></tr>
+                        <tr><td style="padding: 0.3rem;">1-28</td><td style="padding: 0.3rem;">V1 - V28</td><td style="padding: 0.3rem;">93,181 non-null</td><td style="padding: 0.3rem;">float64</td></tr>
+                        <tr><td style="padding: 0.3rem;">29</td><td style="padding: 0.3rem;">Amount</td><td style="padding: 0.3rem;">93,180 non-null</td><td style="padding: 0.3rem;">float64</td></tr>
+                        <tr><td style="padding: 0.3rem;">30</td><td style="padding: 0.3rem;">Class</td><td style="padding: 0.3rem;">93,180 non-null</td><td style="padding: 0.3rem;">float64</td></tr>
+                    </table>
+                    <p style="margin-top: 1rem; color: #FFD700;">Memory usage: 22.0 MB</p>
+                </div>
+
+                <h3>Class Distribution</h3>
+                <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 8px; margin: 1.5rem 0;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; max-width: 600px; margin: 0 auto;">
+                        <div style="text-align: center; background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                            <div style="font-size: 3rem; color: #4CAF50; font-weight: bold;">92,967</div>
+                            <div style="color: #666; font-size: 1.2rem; margin-top: 0.5rem;">Legitimate (0)</div>
+                            <div style="color: #4CAF50; font-size: 1.1rem; margin-top: 0.5rem;">99.77%</div>
+                        </div>
+                        <div style="text-align: center; background: white; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                            <div style="font-size: 3rem; color: #f44336; font-weight: bold;">213</div>
+                            <div style="color: #666; font-size: 1.2rem; margin-top: 0.5rem;">Fraud (1)</div>
+                            <div style="color: #f44336; font-size: 1.1rem; margin-top: 0.5rem;">0.23%</div>
+                        </div>
+                    </div>
+                    <p style="text-align: center; color: #666; margin-top: 1.5rem; font-style: italic;">
+                        Highly imbalanced dataset - Only 0.23% transactions are fraudulent
+                    </p>
+                </div>
+
+                <h3>Transaction Amount Statistics</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin: 1.5rem 0;">
+                    <div style="background: #e3f2fd; padding: 1.5rem; border-radius: 8px; border-left: 5px solid #2196F3;">
+                        <h4 style="color: #1976D2; margin-bottom: 1rem;">Legitimate Transactions (Class 0)</h4>
+                        <table>
+                            <tr><td style="padding: 0.3rem;"><strong>Count:</strong></td><td style="text-align: right;">92,967</td></tr>
+                            <tr><td style="padding: 0.3rem;"><strong>Mean:</strong></td><td style="text-align: right;">$99.01</td></tr>
+                            <tr><td style="padding: 0.3rem;"><strong>Std Dev:</strong></td><td style="text-align: right;">$268.41</td></tr>
+                            <tr><td style="padding: 0.3rem;"><strong>Min:</strong></td><td style="text-align: right;">$0.00</td></tr>
+                            <tr><td style="padding: 0.3rem;"><strong>25%:</strong></td><td style="text-align: right;">$7.61</td></tr>
+                            <tr><td style="padding: 0.3rem;"><strong>Median:</strong></td><td style="text-align: right;">$26.97</td></tr>
+                            <tr><td style="padding: 0.3rem;"><strong>75%:</strong></td><td style="text-align: right;">$89.95</td></tr>
+                            <tr><td style="padding: 0.3rem;"><strong>Max:</strong></td><td style="text-align: right;">$19,656.53</td></tr>
+                        </table>
+                    </div>
+                    <div style="background: #ffebee; padding: 1.5rem; border-radius: 8px; border-left: 5px solid #f44336;">
+                        <h4 style="color: #c62828; margin-bottom: 1rem;">Fraudulent Transactions (Class 1)</h4>
+                        <table>
+                            <tr><td style="padding: 0.3rem;"><strong>Count:</strong></td><td style="text-align: right;">213</td></tr>
+                            <tr><td style="padding: 0.3rem;"><strong>Mean:</strong></td><td style="text-align: right;">$108.46</td></tr>
+                            <tr><td style="padding: 0.3rem;"><strong>Std Dev:</strong></td><td style="text-align: right;">$242.27</td></tr>
+                            <tr><td style="padding: 0.3rem;"><strong>Min:</strong></td><td style="text-align: right;">$0.00</td></tr>
+                            <tr><td style="padding: 0.3rem;"><strong>25%:</strong></td><td style="text-align: right;">$1.00</td></tr>
+                            <tr><td style="padding: 0.3rem;"><strong>Median:</strong></td><td style="text-align: right;">$7.61</td></tr>
+                            <tr><td style="padding: 0.3rem;"><strong>75%:</strong></td><td style="text-align: right;">$99.99</td></tr>
+                            <tr><td style="padding: 0.3rem;"><strong>Max:</strong></td><td style="text-align: right;">$1,809.68</td></tr>
+                        </table>
+                    </div>
+                </div>
+                <p style="text-align: center; color: #666; font-style: italic;">
+                    Key Insight: Fraudulent transactions show similar average amount but lower maximum values
+                </p>
+            </div>
+
+            <div class="info-section">
+                <h2>Data Visualizations</h2>
+                
+                <h3>Comprehensive Visual Analysis</h3>
+                <p style="margin-bottom: 1.5rem;">The project includes extensive visual analysis across multiple dimensions:</p>
+                
+                <div style="background: white; padding: 2rem; border-radius: 8px; margin: 1.5rem 0; border-left: 5px solid #667eea;">
+                    <h4 style="color: #667eea; margin-bottom: 1rem;">📊 Distribution Analysis</h4>
+                    <p>Histogram visualizations showing the distribution patterns for key variables including Time, Amount, and V-features. These distributions help identify:</p>
+                    <ul style="margin-left: 2rem; margin-top: 0.5rem;">
+                        <li>Transaction amount patterns (heavily right-skewed)</li>
+                        <li>Time-based transaction clustering</li>
+                        <li>Feature value distributions across V1-V28</li>
+                    </ul>
+                </div>
+
+                <div style="background: white; padding: 2rem; border-radius: 8px; margin: 1.5rem 0; border-left: 5px solid #764ba2;">
+                    <h4 style="color: #764ba2; margin-bottom: 1rem;">🔍 2-D Distribution Analysis</h4>
+                    <p>Scatter plot matrices revealing relationships between variables:</p>
+                    <ul style="margin-left: 2rem; margin-top: 0.5rem;">
+                        <li>Correlation patterns between Time and Amount</li>
+                        <li>PCA feature interactions (V1-V28 relationships)</li>
+                        <li>Fraud vs legitimate transaction separation in feature space</li>
+                        <li>Outlier detection through visual clustering</li>
+                    </ul>
+                </div>
+
+                <div style="background: white; padding: 2rem; border-radius: 8px; margin: 1.5rem 0; border-left: 5px solid #4CAF50;">
+                    <h4 style="color: #4CAF50; margin-bottom: 1rem;">📈 Time Series Analysis</h4>
+                    <p>Temporal pattern visualization showing:</p>
+                    <ul style="margin-left: 2rem; margin-top: 0.5rem;">
+                        <li>Transaction volume trends over time</li>
+                        <li>Fraud occurrence patterns across different time periods</li>
+                        <li>Peak transaction hours identification</li>
+                        <li>Cyclical patterns in legitimate vs fraudulent activity</li>
+                    </ul>
+                </div>
+
+                <div style="background: white; padding: 2rem; border-radius: 8px; margin: 1.5rem 0; border-left: 5px solid #FF9800;">
+                    <h4 style="color: #FF9800; margin-bottom: 1rem;">💰 Value Trends Analysis</h4>
+                    <p>Transaction value pattern analysis revealing:</p>
+                    <ul style="margin-left: 2rem; margin-top: 0.5rem;">
+                        <li>Amount fluctuations across the dataset timeline</li>
+                        <li>Spending behavior differences between fraud and legitimate transactions</li>
+                        <li>High-value transaction identification</li>
+                        <li>Statistical anomalies in transaction amounts</li>
+                    </ul>
+                </div>
+
+                <div class="note" style="margin-top: 1.5rem;">
+                    <strong>Note:</strong> All visualizations were generated using Matplotlib and Seaborn libraries in Google Colaboratory. Complete visualization code and outputs are available in the GitHub repository.
+                </div>
+            </div>
+
+            <div class="info-section">
+                <h2>Model Performance Metrics</h2>
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 2rem; border-radius: 10px; margin: 2rem 0;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; max-width: 800px; margin: 0 auto;">
+                        <div style="text-align: center; background: rgba(255,255,255,0.95); padding: 2rem; border-radius: 10px;">
+                            <div style="font-size: 1rem; color: #666; margin-bottom: 0.5rem;">Training Accuracy</div>
+                            <div style="font-size: 3rem; color: #4CAF50; font-weight: bold;">95.59%</div>
+                            <div style="font-size: 0.9rem; color: #999; margin-top: 0.5rem;">0.9559</div>
+                        </div>
+                        <div style="text-align: center; background: rgba(255,255,255,0.95); padding: 2rem; border-radius: 10px;">
+                            <div style="font-size: 1rem; color: #666; margin-bottom: 0.5rem;">Test Accuracy</div>
+                            <div style="font-size: 3rem; color: #2196F3; font-weight: bold;">93.02%</div>
+                            <div style="font-size: 0.9rem; color: #999; margin-top: 0.5rem;">0.9302</div>
+                        </div>
+                    </div>
+                </div>
+                <p style="text-align: center; color: #666; font-style: italic; margin-top: 1rem;">
+                    ✓ Model shows consistent performance between training and test data with minimal overfitting
+                </p>
+            </div>
+
+            <div class="info-section">
+                <h2>Key Insights & Findings</h2>
+                <div style="background: #e8f5e9; padding: 1.5rem; border-radius: 8px; border-left: 5px solid #4CAF50; margin-bottom: 1rem;">
+                    <h4 style="color: #2e7d32; margin-bottom: 0.5rem;">✓ High Model Performance</h4>
+                    <p style="margin: 0;">Achieved 95.59% training accuracy and 93.02% test accuracy, demonstrating strong predictive capability with minimal overfitting</p>
+                </div>
+                <div style="background: #fff3e0; padding: 1.5rem; border-radius: 8px; border-left: 5px solid #ff9800; margin-bottom: 1rem;">
+                    <h4 style="color: #e65100; margin-bottom: 0.5rem;">⚠️ Severe Class Imbalance</h4>
+                    <p style="margin: 0;">Only 0.23% of transactions are fraudulent (213 out of 93,181), requiring specialized techniques like SMOTE or undersampling</p>
+                </div>
+                <div style="background: #e3f2fd; padding: 1.5rem; border-radius: 8px; border-left: 5px solid #2196F3; margin-bottom: 1rem;">
+                    <h4 style="color: #1565c0; margin-bottom: 0.5rem;">📊 Transaction Patterns</h4>
+                    <p style="margin: 0;">Fraudulent transactions show varied amounts (median $7.61) with distinct patterns in PCA-transformed features V1-V28</p>
+                </div>
+                <div style="background: #f3e5f5; padding: 1.5rem; border-radius: 8px; border-left: 5px solid #9c27b0; margin-bottom: 1rem;">
+                    <h4 style="color: #6a1b9a; margin-bottom: 0.5rem;">🔍 Feature Engineering Impact</h4>
+                    <p style="margin: 0;">Time-based and statistical aggregation features significantly improved fraud detection accuracy</p>
+                </div>
+                <div style="background: #fce4ec; padding: 1.5rem; border-radius: 8px; border-left: 5px solid #e91e63;">
+                    <h4 style="color: #880e4f; margin-bottom: 0.5rem;">⚡ Data Quality</h4>
+                    <p style="margin: 0;">Dataset contains minimal missing values (only 1 row with NaN), ensuring high data quality for model training</p>
+                </div>
+            </div>
+
+            <div class="info-section">
+                <h2>Challenges Addressed</h2>
+                <ul>
+                    <li>Severe class imbalance (99.77% vs 0.23%)</li>
+                    <li>Anonymized features (V1-V28) requiring creative feature engineering</li>
+                    <li>Minimizing false negatives (missing frauds)</li>
+                    <li>Minimizing false positives (flagging legitimate transactions)</li>
+                    <li>Real-time detection requirements</li>
+                    <li>Model interpretability vs performance tradeoff</li>
+                </ul>
+            </div>
+
+            <div class="info-section">
+                <h2>Future Improvements</h2>
+                <ul>
+                    <li>Deep learning approaches (Neural Networks, LSTM for sequences)</li>
+                    <li>Anomaly detection techniques (Isolation Forest, Autoencoders)</li>
+                    <li>Real-time fraud detection system implementation</li>
+                    <li>Integration with transaction monitoring platforms</li>
+                    <li>Continuous model retraining with new data</li>
+                    <li>Cost-sensitive learning incorporating financial impact</li>
+                    <li>Explainable AI for fraud detection decisions</li>
+                </ul>
+            </div>
+
+            <div class="info-section">
+                <h2>Confusion Matrix Analysis</h2>
+                <div style="background: white; padding: 2rem; border-radius: 10px; border: 3px solid #667eea;">
+                    <h3 style="text-align: center; color: #667eea; margin-bottom: 1.5rem;">📊 Confusion Matrix Results</h3>
+                    <p style="text-align: center; margin-bottom: 2rem;">Classification performance on test dataset</p>
+                    
+                    <div style="max-width: 500px; margin: 0 auto; background: #f8f9fa; padding: 2rem; border-radius: 8px;">
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <tr style="background: #667eea; color: white;">
+                                <th style="padding: 1rem; border: 2px solid white;"></th>
+                                <th style="padding: 1rem; border: 2px solid white;">Predicted: Legitimate (0)</th>
+                                <th style="padding: 1rem; border: 2px solid white;">Predicted: Fraud (1)</th>
+                            </tr>
+                            <tr>
+                                <td style="padding: 1rem; background: #667eea; color: white; font-weight: bold; border: 2px solid white;">Actual: Legitimate (0)</td>
+                                <td style="padding: 1.5rem; text-align: center; background: #d4edda; border: 2px solid white;">
+                                    <div style="font-size: 2rem; font-weight: bold; color: #155724;">TN</div>
+                                    <div style="font-size: 0.9rem; color: #155724; margin-top: 0.5rem;">True Negatives</div>
+                                </td>
+                                <td style="padding: 1.5rem; text-align: center; background: #f8d7da; border: 2px solid white;">
+                                    <div style="font-size: 2rem; font-weight: bold; color: #721c24;">FP</div>
+                                    <div style="font-size: 0.9rem; color: #721c24; margin-top: 0.5rem;">False Positives</div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 1rem; background: #667eea; color: white; font-weight: bold; border: 2px solid white;">Actual: Fraud (1)</td>
+                                <td style="padding: 1.5rem; text-align: center; background: #fff3cd; border: 2px solid white;">
+                                    <div style="font-size: 2rem; font-weight: bold; color: #856404;">FN</div>
+                                    <div style="font-size: 0.9rem; color: #856404; margin-top: 0.5rem;">False Negatives</div>
+                                </td>
+                                <td style="padding: 1.5rem; text-align: center; background: #d1ecf1; border: 2px solid white;">
+                                    <div style="font-size: 2rem; font-weight: bold; color: #0c5460;">TP</div>
+                                    <div style="font-size: 0.9rem; color: #0c5460; margin-top: 0.5rem;">True Positives</div>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                    <p style="text-align: center; color: #666; margin-top: 1.5rem; font-style: italic;">
+                        Confusion matrix visualizes model's classification accuracy with emphasis on minimizing False Negatives (missed frauds)
+                    </p>
+                </div>
+            </div>
+
+            <div style="text-align: center; padding: 3rem 0 1rem 0;">
+                <p style="font-size: 1.2rem; color: #666;">
+                    For complete code, visualizations, and detailed analysis, visit the 
+                    <a href="https://github.com/SAMAYEETA27/Feature-Engineering-for-Credit-Card-Fraud-Detection-by-Samayeeta-Saha" 
+                       target="_blank" 
+                       style="color: #667eea; font-weight: bold; text-decoration: none;">
+                        GitHub Repository
+                    </a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showPage(pageId) {
+            // Hide all pages
+            const pages = document.querySelectorAll('.page');
+            pages.forEach(page => page.classList.remove('active'));
+            
+            // Show selected page
+            const selectedPage = document.getElementById(pageId);
+            if (selectedPage) {
+                selectedPage.classList.add('active');
+            }
+            
+            // Scroll to top smoothly
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Ensure home page is shown on load
+        document.addEventListener('DOMContentLoaded', function() {
+            showPage('home');
+        });
+    </script>
+</body>
+</html
